@@ -146,7 +146,7 @@ def neuralNetwork(trainData, trainLabels, testData, fold):
 	trainLabelsOneHot[np.arange(trainLabels.shape[0]), trainLabels] = 1
 	
 	model = create_model(trainData.shape[1], lrate)
-	train_model(model, trainData, trainLabelsOneHot, batchSize, path_model='./models_nn/model_kfold_mano_400_%i' %fold, path_logdir='models_nn/logs_kfold_mano_400_%i' %fold, epoch=200)
+	train_model(model, trainData, trainLabelsOneHot, batchSize, path_model='./models_nn/model_kfold_mano_400_%i' %fold, path_logdir='models_nn/logs_kfold_mano_400_%i' %fold, epoch=300)
 	labels = test_model(model, testData, batchSize, path_model='./models_nn/model_kfold_mano_400_%i' %fold)
 	
 	return labels
@@ -181,7 +181,7 @@ hidden layers = [100, 50]
 epoch = 200
 auc =  61~ (underfitting)
 
-3 fold, no smote
+3 fold, no smote:: submitted to kaggle score - 0.626
 batch size = 2000
 lrate = 1e-4
 hidden layers = [100, 30]

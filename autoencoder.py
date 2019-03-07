@@ -135,22 +135,15 @@ def test_model(model, testData, batchSize, path_model, outfile):
 		
 def autoencoder(trainData, trainLabels, testData, str, fold):
 	
-	batchSize = 100
+	batchSize = 2000
 	negatives = list()
-	'''
-	for labels in range(0,X_train.shape[0]):
-		if Y_train[labels]==1:
-			negatives.append(labels)
-	print(len(negatives))
-	print('before - ',X_train.shape)
-	X_train= np.delete(X_train, negatives, axis=0)
-	'''
+	
 	print('after - ',trainData.shape)
 
 	#'''
-	lrate = 5e-6
+	lrate = 1e-5
 	model = create_model(trainData.shape[1], lrate)
-	train_model(model, trainData, trainLabels, batchSize, path_model='./models/model_kfold_mano_400_%i' %fold, path_logdir='models/logs_kfold_mano_400_%i' %fold, epoch=20)
+	train_model(model, trainData, trainLabels, batchSize, path_model='./models/model_kfold_mano_400_%i' %fold, path_logdir='models/logs_kfold_mano_400_%i' %fold, epoch=100)
 	test_model(model, testData, batchSize, path_model='./models/model_kfold_mano_400_%i' %fold, outfile=('models/'+str+'_%i') %fold)
 	#'''
 

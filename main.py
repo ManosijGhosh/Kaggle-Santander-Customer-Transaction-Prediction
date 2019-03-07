@@ -21,7 +21,7 @@ from neuralNetwork import neuralNetwork
 TO DO: DROP TIME ATTRIBUTE AND TRY
 '''
 
-def preprocess(choice=1):
+def preprocess():
 	
 	df = pd.read_csv('Data/train.csv')
 	data = df
@@ -80,7 +80,7 @@ def consfusion_eval(actualLabels,predictedLabels):
 	print(' AUC - ', auc)
 	return auc
 		
-def main():
+def classifier():
 	
 	#X_label, X_train, Y_test = make_data()
 	if not os.path.exists('models'):
@@ -88,8 +88,8 @@ def main():
 	data, labels = preprocess(2) # 1-kaggle, 2- credit card
 	fold = 3
 	count=0
-	choice = 2 #0- knn_classifier, 1 - autoencoder, 2 - neural network
-	str = 'test_log_mano_50'
+	choice = 1 #0- knn_classifier, 1 - autoencoder, 2 - neural network
+	fileName = 'test_log_mano_50'
 	for train_index, test_index in split(data, labels, fold):
 		count += 1
 		trainData,testData = data[train_index], data[test_index]
@@ -104,11 +104,11 @@ def main():
 			auc = consfusion_eval(testLabels, knnLabels)
 			print('AUC - ',auc)
 		elif (choice == 1):
-			autoencoder(trainData, trainLabels, testData, str, count)
+			autoencoder(trainData, trainLabels, testData, fileName, count)
 			maxAuc = maxThreshold = 0
 			for i in range(0,20):
 				thresh = i/10000
-				autoencoderLabels = evaluate(('models/'+str+'_%i') %count, thresh)
+				autoencoderLabels = evaluate(('models/'+fileName+'_%i') %count, thresh)
 				print('Thresh - ', thresh),
 				temp = consfusion_eval(testLabels, autoencoderLabels)
 				if (temp>maxAuc):
@@ -120,7 +120,29 @@ def main():
 			auc = consfusion_eval(testLabels, nnLabels)
 			print('for fold - ', count,' AUC - ',auc)
 				
+def generateResult():
+	if not os.path.exists('models'):
+		os.mkdir('models')
+	trainData, trainLabels = preprocess() # 1-kaggle, 2- credit card
+	
+	# get test data
+	testData = pd.read_csv('Data/test.csv')
+	testData = testData.drop(['ID_code'],axis=1)
+	testData = preprocessing.normalize(testData.values)
+	
+	
+	nnLabels = neuralNetwork(trainData, trainLabels, testData, 0)
 
-main()
+	print('Predicted number of 1 - ',format(sum(trainLabels==1)))
+	print('Predicted number of 0 - ',format(sum(trainLabels==0)))
+
+	file = open('sample_submission.csv','w') 
+ 	
+	file.write('ID_code,target') 
+	for i in range(0,nnLabels.shape[0]):
+		string = 'test_'+str(i)+','+str(int(nnLabels[i]))+'\n'
+		file.write(string)
+			
+generateResult()
 
 ## THRESH 1.0: true fraud: 434, false fraud: 21397, total: 284800
