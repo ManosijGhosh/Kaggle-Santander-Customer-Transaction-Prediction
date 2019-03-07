@@ -27,8 +27,9 @@ def create_model(ip_shape, lrate = 1e-5):
 	#create model
 	with tf.name_scope('input'):
 		model['ip'] = tf.placeholder(tf.float32, [None, dim_input], name = 'input-vector')
-		model['labels'] = tf.placeholder(tf.float32, [1, None], name = 'input-vector')
+		model['labels'] = tf.placeholder(tf.float32, [1, None], name = 'input-labels')
 
+	model['labels'] = tf.stop_gradient(model['labels'])
 	# FIRST ENCODING LAYER
 
 	with tf.name_scope('encoding-layer-1'):
@@ -76,7 +77,7 @@ def create_model(ip_shape, lrate = 1e-5):
 
 	return model;
 
-def train_model(model, X_train, X_labels, batchSize, path_model, path_logdir, epoch = 100):
+def train_model(model, trainData, trainLabels, batchSize, path_model, path_logdir, epoch = 100):
 
 	with tf.Session() as session:
 		init = tf.global_variables_initializer()
@@ -90,10 +91,10 @@ def train_model(model, X_train, X_labels, batchSize, path_model, path_logdir, ep
 
 		for i in range(epoch):
 			loss = np.empty([1,0])
-			for count in range(0,X_train.shape[0],batchSize):
-				in_vector = X_train[count:min(count+batchSize,X_train.shape[0])]
-				in_labels = X_labels[count:min(count+batchSize,X_train.shape[0])]
-				in_labels = np.asarray(in_labels).reshape(1,min(batchSize,X_train.shape[0]-count))
+			for count in range(0,trainData.shape[0],batchSize):
+				in_vector = trainData[count:min(count+batchSize,trainData.shape[0])]
+				in_labels = trainLabels[count:min(count+batchSize,trainData.shape[0])]
+				in_labels = np.asarray(in_labels).reshape(1,min(batchSize,trainData.shape[0]-count))
 				#print(in_labels)
 				#print(in_labels.shape)
 				#in_labels = in_labels.transpose()
@@ -110,7 +111,7 @@ def train_model(model, X_train, X_labels, batchSize, path_model, path_logdir, ep
 
 		saver.save(session, path_model)
 
-def test_model(model, X_test, batchSize, path_model, outfile):
+def test_model(model, testData, batchSize, path_model, outfile):
 
 	#path_model = './model-4'
 	#path_logdir = 'logs-auto-2'
@@ -121,9 +122,9 @@ def test_model(model, X_test, batchSize, path_model, outfile):
 			saver = tf.train.Saver()
 			saver.restore(sess, path_model)
 
-			for i in range(0,X_test.shape[0],batchSize):
+			for i in range(0,testData.shape[0],batchSize):
 
-				in_vector = X_test[i:min(i+batchSize,X_test.shape[0])]
+				in_vector = testData[i:min(i+batchSize,testData.shape[0])]
 				feed = {model['ip']: in_vector}
 
 				outfp.write('Batch --- ' + str(i//batchSize) + ' --- \n')
@@ -132,9 +133,8 @@ def test_model(model, X_test, batchSize, path_model, outfile):
 				outfp.write(str(list(ans)))
 				outfp.write('\n')
 		
-def autoencoder(X_train, X_test, Y_train, str, fold):
+def autoencoder(trainData, trainLabels, testData, str, fold):
 	
-	#X_test, X_train, Y_test = make_data()
 	batchSize = 100
 	negatives = list()
 	'''
@@ -145,13 +145,14 @@ def autoencoder(X_train, X_test, Y_train, str, fold):
 	print('before - ',X_train.shape)
 	X_train= np.delete(X_train, negatives, axis=0)
 	'''
-	print('after - ',X_train.shape)
+	print('after - ',trainData.shape)
 
 	#'''
-	lrate = 1e-5
-	model = create_model(X_train.shape[1], lrate)
-	train_model(model, X_train, Y_train, batchSize, path_model='./models/model_kfold_mano_400_%i' %fold, path_logdir='models/logs_kfold_mano_400_%i' %fold, epoch=50)
-	test_model(model, X_test, batchSize, path_model='./models/model_kfold_mano_400_%i' %fold, outfile=('models/'+str+'_%i') %fold)
+	lrate = 5e-6
+	model = create_model(trainData.shape[1], lrate)
+	train_model(model, trainData, trainLabels, batchSize, path_model='./models/model_kfold_mano_400_%i' %fold, path_logdir='models/logs_kfold_mano_400_%i' %fold, epoch=20)
+	test_model(model, testData, batchSize, path_model='./models/model_kfold_mano_400_%i' %fold, outfile=('models/'+str+'_%i') %fold)
 	#'''
 
 ## THRESH 1.0: true fraud: 434, false fraud: 21397, total: 284800
+## Max auc -  0.5448489244014718  threshold -  0.0013

@@ -1,3 +1,4 @@
 Data/
 models/
 __pycache__
+models_nn/

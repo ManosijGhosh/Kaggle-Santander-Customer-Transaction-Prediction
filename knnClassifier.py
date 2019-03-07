@@ -1,8 +1,8 @@
 from sklearn.neighbors import KNeighborsClassifier
 
-def createKnnModel(X_train, X_test, Y_train):
-	knnModel = KNeighborsClassifier(n_neighbors=3)
-	knnModel.fit(X_train, Y_train)
+def createKnnModel(trainData, trainLabels, testData):
+	knnModel = KNeighborsClassifier(n_neighbors=3, n_jobs = 4)
+	knnModel.fit(trainData, trainLabels)
 	print('knnTrained')
-	results = knnModel.predict(X_test)
+	results = knnModel.predict(testData)
 	return results

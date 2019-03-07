@@ -15,6 +15,7 @@ from confusion import evaluate
 from knnClassifier import createKnnModel
 from autoencoder import autoencoder
 from sklearn import preprocessing
+from neuralNetwork import neuralNetwork
 
 '''
 TO DO: DROP TIME ATTRIBUTE AND TRY
@@ -33,6 +34,11 @@ def preprocess(choice=1):
 	X_val = preprocessing.normalize(X_val.values)
 	Y_val = Y_val.values
 
+	'''
+	from sklearn.preprocessing import StandardScaler
+
+	data['normAmount'] = StandardScaler().fit_transform(data['Amount'].reshape(-1, 1))
+	'''
 	return X_val, Y_val
 
 def split(X_val, Y_val,fold):
@@ -51,7 +57,7 @@ def consfusion_eval(actualLabels,predictedLabels):
 	#sprint(labels)
 	#TPX, TNX, FPX, FNX = list(), list(), list(), list()
 	
-	print(len(actualLabels),' ',len(predictedLabels))
+	#print(len(actualLabels),' ',len(predictedLabels))
 	
 	
 	if (len(actualLabels)!=len(predictedLabels)):
@@ -69,39 +75,51 @@ def consfusion_eval(actualLabels,predictedLabels):
 				fp+=1
 			else:
 				fn+=1;
-	print('Conf: ', tp, ' -- ', tn, ' -- ', fp, ' -- ', fn)
+	print('Conf: ', tp, ' -- ', tn, ' -- ', fp, ' -- ', fn),
+	auc = (tp/(2*(tp+fn))) + (tn/(2*(fp+tn)))
+	print(' AUC - ', auc)
+	return auc
 		
 def main():
 	
-	#X_test, X_train, Y_test = make_data()
+	#X_label, X_train, Y_test = make_data()
 	if not os.path.exists('models'):
 		os.mkdir('models')
-	X_val, Y_val = preprocess(2) # 1-kaggle, 2- credit card
+	data, labels = preprocess(2) # 1-kaggle, 2- credit card
 	fold = 3
 	count=0
+	choice = 2 #0- knn_classifier, 1 - autoencoder, 2 - neural network
 	str = 'test_log_mano_50'
-	for train_index, test_index in split(X_val, Y_val, fold):
+	for train_index, test_index in split(data, labels, fold):
 		count += 1
-		X_train, X_test = X_val[train_index], X_val[test_index]
-		Y_train, Y_test = Y_val[train_index], Y_val[test_index]
+		trainData,testData = data[train_index], data[test_index]
+		trainLabels, testLabels = labels[train_index], labels[test_index]
 
 		print('splitting done')
-		print('Number of 1 - ', sum(Y_test), ' 0 - ',(len(Y_test)-sum(Y_test)))
-		'''
-		knnLabels = createKnnModel(X_train, X_test, Y_train)
-		print('knn trained')
-		consfusion_eval(Y_test, knnLabels)
-		
-		'''
+		print('Number of 1 - ', sum(testLabels), ' 0 - ',(len(testLabels)-sum(testLabels)))
 
-		autoencoder(X_train, X_test, Y_train, str, count)
-		for i in range(100,250):
-			autoencoderLabels = evaluate(('models/'+str+'_%i') %count, (i/1000))
-			print('Thresh - ', (i/100)),
-			consfusion_eval(Y_test, autoencoderLabels)
-		#'''
-		#break
-		
+		if (choice == 0):
+			knnLabels = createKnnModel(trainData, trainLabels, testData)
+			print('knn trained')
+			auc = consfusion_eval(testLabels, knnLabels)
+			print('AUC - ',auc)
+		elif (choice == 1):
+			autoencoder(trainData, trainLabels, testData, str, count)
+			maxAuc = maxThreshold = 0
+			for i in range(0,20):
+				thresh = i/10000
+				autoencoderLabels = evaluate(('models/'+str+'_%i') %count, thresh)
+				print('Thresh - ', thresh),
+				temp = consfusion_eval(testLabels, autoencoderLabels)
+				if (temp>maxAuc):
+					maxAuc = temp
+					maxThreshold = thresh
+			print('Max auc - ',maxAuc,' threshold - ',maxThreshold)
+		elif (choice == 2):
+			nnLabels = neuralNetwork(trainData, trainLabels, testData, count)
+			auc = consfusion_eval(testLabels, nnLabels)
+			print('for fold - ', count,' AUC - ',auc)
+				
 
 main()
 
