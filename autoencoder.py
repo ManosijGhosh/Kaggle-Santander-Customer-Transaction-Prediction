@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 from confusion import evaluate
+import statistics
 
 
 def create_model(ip_shape, lrate = 1e-5):
@@ -63,19 +64,19 @@ def create_model(ip_shape, lrate = 1e-5):
 	# loss calculation
 	with tf.name_scope('loss_optim_4'):
 
-		model['sq-diff'] = tf.squared_difference(model['ip'], model['op'])
-		model['0-loss'] = tf.multiply(tf.subtract(tf.fill([1, tf.shape(model['labels'])[1]], 1),model['labels']),model['sq-diff'])
-		model['1-loss'] = tf.multiply(model['labels'],tf.maximum(tf.subtract(model['labels'],model['sq-diff']),tf.fill([1,tf.shape(model['labels'])[1]],0)))
-		model['cost'] = tf.reduce_mean(tf.add(model['0-loss'], model['1-loss']), name = 'cost')
+		model['sq-diff'] = tf.reduce_mean(tf.squared_difference(model['ip'], model['op']),name='sq-diff')
+		model['0-loss'] = tf.multiply(tf.subtract(tf.fill([1, tf.shape(model['labels'])[1]], 1.0),model['labels']),model['sq-diff'])
+		model['1-loss'] = tf.multiply(model['labels'],tf.maximum(tf.subtract(model['labels'],model['sq-diff']),tf.fill([1,tf.shape(model['labels'])[1]],0.0)))
+		model['cost'] = tf.add(model['0-loss'], model['1-loss'])
 		model['optimizer'] = tf.train.AdamOptimizer(lrate).minimize(model['cost'], name = 'optim')
 
-		model['loss'] = tf.reduce_mean(tf.minimum(tf.math.subtract(model['label'],tf.squared_difference(model['ip'], model['op'])),0), name = 'loss')
-		
+		model['cost-2'] = tf.reduce_mean(tf.squared_difference(model['ip'], model['op']), axis=1, name='cost-2')
+
 	# return the model dictionary
 
 	return model;
 
-def train_model(model, X_train, batchSize, path_model, path_logdir, epoch = 100):
+def train_model(model, X_train, X_labels, batchSize, path_model, path_logdir, epoch = 100):
 
 	with tf.Session() as session:
 		init = tf.global_variables_initializer()
@@ -88,16 +89,24 @@ def train_model(model, X_train, batchSize, path_model, path_logdir, epoch = 100)
 		writer = tf.summary.FileWriter(path_logdir, session.graph)
 
 		for i in range(epoch):
+			loss = np.empty([1,0])
 			for count in range(0,X_train.shape[0],batchSize):
 				in_vector = X_train[count:min(count+batchSize,X_train.shape[0])]
+				in_labels = X_labels[count:min(count+batchSize,X_train.shape[0])]
+				in_labels = np.asarray(in_labels).reshape(1,min(batchSize,X_train.shape[0]-count))
+				#print(in_labels)
+				#print(in_labels.shape)
+				#in_labels = in_labels.transpose()
+				#print(in_labels.shape())
 				#in_vector = in_vector.reshape(1, in_vector.shape[0])
-				feed = {model['ip']: in_vector}
+				feed = {model['ip']: in_vector, model['labels']: in_labels}
 
-				_, summary = session.run([model['optimizer'], model['sum_loss']], feed_dict = feed)
+				_, summary = session.run([model['optimizer'], model['cost']], feed_dict = feed)
+				loss = np.append(loss,summary)
+				#print('for batch - ', (count//batchSize), ' - ', np.mean(summary), ' summary size - ',summary.shape)
 				#print('Cost: ', model['cost'].eval())
-			writer.add_summary(summary, i)
-			#if (i%10==0):
-			print('Epoch: ', i)
+			#writer.add_summary(summary, i) # AttributeError: 'numpy.ndarray' object has no attribute 'value'
+			print('Epoch: ', i, 'loss - ',statistics.mean(loss))
 
 		saver.save(session, path_model)
 
@@ -139,8 +148,9 @@ def autoencoder(X_train, X_test, Y_train, str, fold):
 	print('after - ',X_train.shape)
 
 	#'''
-	model = create_model(X_train.shape[1], batchSize)
-	train_model(model, X_train, batchSize, path_model='./models/model_kfold_mano_400_%i' %fold, path_logdir='models/logs_kfold_mano_400_%i' %fold, epoch=50)
+	lrate = 1e-5
+	model = create_model(X_train.shape[1], lrate)
+	train_model(model, X_train, Y_train, batchSize, path_model='./models/model_kfold_mano_400_%i' %fold, path_logdir='models/logs_kfold_mano_400_%i' %fold, epoch=50)
 	test_model(model, X_test, batchSize, path_model='./models/model_kfold_mano_400_%i' %fold, outfile=('models/'+str+'_%i') %fold)
 	#'''
 

@@ -13,14 +13,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 from confusion import evaluate
 from knnClassifier import createKnnModel
-from autoencoder_kfold import autoencoder
+from autoencoder import autoencoder
 from sklearn import preprocessing
 
 '''
 TO DO: DROP TIME ATTRIBUTE AND TRY
 '''
 
-def preprocess():
+def preprocess(choice=1):
 	
 	df = pd.read_csv('Data/train.csv')
 	data = df
@@ -76,7 +76,7 @@ def main():
 	#X_test, X_train, Y_test = make_data()
 	if not os.path.exists('models'):
 		os.mkdir('models')
-	X_val, Y_val = preprocess()
+	X_val, Y_val = preprocess(2) # 1-kaggle, 2- credit card
 	fold = 3
 	count=0
 	str = 'test_log_mano_50'
@@ -95,11 +95,12 @@ def main():
 		'''
 
 		autoencoder(X_train, X_test, Y_train, str, count)
-		for i in range(0,10):
-			autoencoderLabels = evaluate(('models/'+str+'_%i') %count, (i/100))
+		for i in range(0,100):
+			autoencoderLabels = evaluate(('models/'+str+'_%i') %count, (i/10000))
 			print('Thresh - ', (i/100)),
 			consfusion_eval(Y_test, autoencoderLabels)
 		#'''
+		break
 		
 
 main()

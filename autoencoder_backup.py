@@ -135,8 +135,9 @@ def autoencoder(X_train, X_test, Y_train, str, fold):
 	X_train= np.delete(X_train, negatives, axis=0)
 	print('after - ',X_train.shape)
 
+	lrate = 1e-5
 	#'''
-	model = create_model(X_train.shape[1], batchSize)
+	model = create_model(X_train.shape[1], batchSize, lrate)
 	train_model(model, X_train, batchSize, path_model='./models/model_kfold_mano_400_%i' %fold, path_logdir='models/logs_kfold_mano_400_%i' %fold, epoch=50)
 	test_model(model, X_test, batchSize, path_model='./models/model_kfold_mano_400_%i' %fold, outfile=('models/'+str+'_%i') %fold)
 	#'''
