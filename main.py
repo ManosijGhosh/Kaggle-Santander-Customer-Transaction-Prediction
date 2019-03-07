@@ -53,10 +53,10 @@ def consfusion_eval(actualLabels,predictedLabels):
 	
 	print(len(actualLabels),' ',len(predictedLabels))
 	
-	'''
+	
 	if (len(actualLabels)!=len(predictedLabels)):
 		print ('error final label not same as actual')
-	'''
+	
 	tp = tn = fp = fn = 0
 	for j in range(len(predictedLabels)):
 		if (predictedLabels[j]==actualLabels[j]):
@@ -95,12 +95,12 @@ def main():
 		'''
 
 		autoencoder(X_train, X_test, Y_train, str, count)
-		for i in range(0,100):
-			autoencoderLabels = evaluate(('models/'+str+'_%i') %count, (i/10000))
+		for i in range(100,250):
+			autoencoderLabels = evaluate(('models/'+str+'_%i') %count, (i/1000))
 			print('Thresh - ', (i/100)),
 			consfusion_eval(Y_test, autoencoderLabels)
 		#'''
-		break
+		#break
 		
 
 main()
