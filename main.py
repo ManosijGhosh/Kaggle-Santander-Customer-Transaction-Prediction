@@ -147,7 +147,7 @@ def generateResult():
 	
 	
 	#testLabels = neuralNetwork(trainData, trainLabels, testData, 0)
-	testLabels = restrictedBoltzmannMachine(trainData, trainLabels, testData)
+	testLabels = featureSelectionMI(trainData, trainLabels, testData)
 
 	print('Predicted number of 1 - ',format(sum(testLabels==1)))
 	print('Predicted number of 0 - ',format(sum(testLabels==0)))
@@ -159,7 +159,7 @@ def generateResult():
 		string = 'test_'+str(i)+','+str(int(testLabels[i]))+'\n'
 		file.write(string)
 			
-classifier()
-#generateResult()
+#classifier()
+generateResult()
 
 ## THRESH 1.0: true fraud: 434, false fraud: 21397, total: 284800

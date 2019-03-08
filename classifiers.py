@@ -4,6 +4,8 @@ from sklearn import linear_model, datasets, metrics
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier
+from scipy.stats import pearsonr
+
 
 #repeated here from main
 def consfusion_eval(actualLabels,predictedLabels):
@@ -30,7 +32,7 @@ def consfusion_eval(actualLabels,predictedLabels):
 
 
 def logisticRegression(trainData, trainLabels, testData):
-	logistic = linear_model.LogisticRegression(solver='lbfgs', max_iter=1000, multi_class='multinomial')
+	logistic = linear_model.LogisticRegression(solver='lbfgs', max_iter=10000, multi_class='multinomial')
 	
 	logistic.C = 100
 	logistic.fit(trainData, trainLabels)
@@ -52,22 +54,31 @@ def randomForest(trainData, trainLabels, testData):
 	labels = randomForest.predict(testData)
 	return labels
 
-def featureSelectionMI(trainData, trainLabels, testData, testLabels):
-	n = trainData.shape[0]
+def featureSelectionMI(trainData, trainLabels, testData):
+	n = trainData.shape[1]
+	print(n)
 	miValue=np.repeat(0.0,n)
 	for i in range(0,n-1):
-		miValue[i] = metrics.normalized_mutual_info_score(trainData[:,i],trainLabels)
-		
+		#miValue[i] = metrics.normalized_mutual_info_score(trainData[:,i],trainLabels, average_method='geometric')
+		#miValue[i] = metrics.mutual_info_score(trainData[:,i],trainLabels)
+		miValue[i] , p_value = pearsonr(trainData[:,i],trainLabels)
 	print(miValue)
 	ranking=(-miValue).argsort()
 	print(ranking)
 
-	for loopval in range(10,200,10):
+	'''
+	for loopval in range(10,199,20):
 		temp=ranking[0:loopval]
 		#print(temp)
 		traindatanew=trainData[:,temp]
 		testdatanew=testData[:,temp]
-		labels = logisticRegression(datanew, trainLabels, testdatanew)
-		auc = consfusion_eval(testLabels, rfLabels)
+		labels = logisticRegression(traindatanew, trainLabels, testdatanew)
+		auc = consfusion_eval(testLabels, labels)
 		print('for ',loopval,' features; AUC - ',auc)
-
+	'''
+	temp=ranking[0:169]
+	#print(temp)
+	traindatanew=trainData[:,temp]
+	testdatanew=testData[:,temp]
+	labels = logisticRegression(traindatanew, trainLabels, testdatanew)
+	return labels
