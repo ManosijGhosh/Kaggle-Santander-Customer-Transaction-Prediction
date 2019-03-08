@@ -11,11 +11,15 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
-from confusion import evaluate
-from knnClassifier import createKnnModel
-from autoencoder import autoencoder
 from sklearn import preprocessing
+
+from confusion import evaluate
+from autoencoder import autoencoder
 from neuralNetwork import neuralNetwork
+from boltzmannMachine import restrictedBoltzmannMachine
+from classifiers import createKnnModel
+from classifiers import randomForest
+from classifiers import featureSelectionMI
 
 '''
 TO DO: DROP TIME ATTRIBUTE AND TRY
@@ -85,10 +89,11 @@ def classifier():
 	#X_label, X_train, Y_test = make_data()
 	if not os.path.exists('models'):
 		os.mkdir('models')
-	data, labels = preprocess(2) # 1-kaggle, 2- credit card
+	data, labels = preprocess()
 	fold = 3
 	count=0
-	choice = 1 #0- knn_classifier, 1 - autoencoder, 2 - neural network
+	choice = 5
+	#0- knn_classifier, 1 - autoencoder, 2 - neural network, 3 - bernoilli restricted boltzmann machine
 	fileName = 'test_log_mano_50'
 	for train_index, test_index in split(data, labels, fold):
 		count += 1
@@ -119,6 +124,16 @@ def classifier():
 			nnLabels = neuralNetwork(trainData, trainLabels, testData, count)
 			auc = consfusion_eval(testLabels, nnLabels)
 			print('for fold - ', count,' AUC - ',auc)
+		elif (choice == 3):
+			boltzLabels = restrictedBoltzmannMachine(trainData, trainLabels, testData)
+			auc = consfusion_eval(testLabels, boltzLabels)
+			print('AUC - ',auc)
+		elif (choice == 4):
+			rfLabels = randomForest(trainData, trainLabels, testData)
+			auc = consfusion_eval(testLabels, rfLabels)
+			print('AUC - ',auc)
+		elif (choice==5):
+			featureSelectionMI(trainData, trainLabels, testData, testLabels)
 				
 def generateResult():
 	if not os.path.exists('models'):
@@ -131,18 +146,20 @@ def generateResult():
 	testData = preprocessing.normalize(testData.values)
 	
 	
-	nnLabels = neuralNetwork(trainData, trainLabels, testData, 0)
+	#testLabels = neuralNetwork(trainData, trainLabels, testData, 0)
+	testLabels = restrictedBoltzmannMachine(trainData, trainLabels, testData)
 
-	print('Predicted number of 1 - ',format(sum(trainLabels==1)))
-	print('Predicted number of 0 - ',format(sum(trainLabels==0)))
+	print('Predicted number of 1 - ',format(sum(testLabels==1)))
+	print('Predicted number of 0 - ',format(sum(testLabels==0)))
 
 	file = open('sample_submission.csv','w') 
  	
-	file.write('ID_code,target') 
-	for i in range(0,nnLabels.shape[0]):
-		string = 'test_'+str(i)+','+str(int(nnLabels[i]))+'\n'
+	file.write('ID_code,target\n') 
+	for i in range(0,testLabels.shape[0]):
+		string = 'test_'+str(i)+','+str(int(testLabels[i]))+'\n'
 		file.write(string)
 			
-generateResult()
+classifier()
+#generateResult()
 
 ## THRESH 1.0: true fraud: 434, false fraud: 21397, total: 284800
