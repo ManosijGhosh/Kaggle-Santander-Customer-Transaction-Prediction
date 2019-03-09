@@ -32,7 +32,7 @@ def consfusion_eval(actualLabels,predictedLabels):
 
 
 def logisticRegression(trainData, trainLabels, testData):
-	logistic = linear_model.LogisticRegression(solver='lbfgs', max_iter=10000, multi_class='multinomial')
+	logistic = linear_model.LogisticRegression(solver='lbfgs', verbose=True, max_iter=5000, class_weight={0:1,1:10})
 	
 	logistic.C = 100
 	logistic.fit(trainData, trainLabels)

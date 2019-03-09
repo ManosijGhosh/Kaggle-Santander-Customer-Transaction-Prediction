@@ -123,7 +123,7 @@ def test_model(model, testData, batchSize, path_model):
 		
 def neuralNetwork(trainData, trainLabels, testData, fold):
 	
-	batchSize = 2000
+	batchSize = 4000
 	lrate = 1e-4
 	isSmoteDone = 0
 	print('train data size - ',trainData.shape, ' label size - ',trainLabels.shape)
@@ -194,4 +194,11 @@ lrate = 1e-4
 hidden layers = [100]
 epoch = 200
 auc =  61.31
+
+3 fold, no smote
+batch size = 4000
+lrate = 1e-4
+hidden layers = [100, 30]
+epoch = 600
+auc =  64.31
 '''

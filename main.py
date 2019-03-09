@@ -20,6 +20,7 @@ from boltzmannMachine import restrictedBoltzmannMachine
 from classifiers import createKnnModel
 from classifiers import randomForest
 from classifiers import featureSelectionMI
+from classifiers import logisticRegression
 
 '''
 TO DO: DROP TIME ATTRIBUTE AND TRY
@@ -92,7 +93,7 @@ def classifier():
 	data, labels = preprocess()
 	fold = 3
 	count=0
-	choice = 5
+	choice = 4
 	#0- knn_classifier, 1 - autoencoder, 2 - neural network, 3 - bernoilli restricted boltzmann machine
 	fileName = 'test_log_mano_50'
 	for train_index, test_index in split(data, labels, fold):
@@ -129,7 +130,8 @@ def classifier():
 			auc = consfusion_eval(testLabels, boltzLabels)
 			print('AUC - ',auc)
 		elif (choice == 4):
-			rfLabels = randomForest(trainData, trainLabels, testData)
+			#rfLabels = randomForest(trainData, trainLabels, testData)
+			rfLabels = logisticRegression(trainData, trainLabels, testData)
 			auc = consfusion_eval(testLabels, rfLabels)
 			print('AUC - ',auc)
 		elif (choice==5):
@@ -147,7 +149,8 @@ def generateResult():
 	
 	
 	#testLabels = neuralNetwork(trainData, trainLabels, testData, 0)
-	testLabels = featureSelectionMI(trainData, trainLabels, testData)
+	#testLabels = featureSelectionMI(trainData, trainLabels, testData)
+	testLabels = logisticRegression(trainData, trainLabels, testData)
 
 	print('Predicted number of 1 - ',format(sum(testLabels==1)))
 	print('Predicted number of 0 - ',format(sum(testLabels==0)))
