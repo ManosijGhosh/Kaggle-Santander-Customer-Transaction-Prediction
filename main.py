@@ -21,6 +21,10 @@ from classifiers import createKnnModel
 from classifiers import randomForest
 from classifiers import featureSelectionMI
 from classifiers import logisticRegression
+from classifiers import svmClassifier
+from classifiers import adaBoostClassifier
+from classifiers import classifierCombination
+from classifiers import mlpClassifier
 
 '''
 TO DO: DROP TIME ATTRIBUTE AND TRY
@@ -130,9 +134,13 @@ def classifier():
 			auc = consfusion_eval(testLabels, boltzLabels)
 			print('AUC - ',auc)
 		elif (choice == 4):
-			#rfLabels = randomForest(trainData, trainLabels, testData)
-			rfLabels = logisticRegression(trainData, trainLabels, testData)
-			auc = consfusion_eval(testLabels, rfLabels)
+			#labels = randomForest(trainData, trainLabels, testData)
+			#labels = logisticRegression(trainData, trainLabels, testData)
+			#labels = svmClassifier(trainData, trainLabels, testData)
+			#labels = adaBoostClassifier(trainData, trainLabels, testData)
+			#labels = classifierCombination(trainData, trainLabels, testData)
+			labels = mlpClassifier(trainData, trainLabels, testData)
+			auc = consfusion_eval(testLabels, labels)
 			print('AUC - ',auc)
 		elif (choice==5):
 			featureSelectionMI(trainData, trainLabels, testData, testLabels)
@@ -150,7 +158,8 @@ def generateResult():
 	
 	#testLabels = neuralNetwork(trainData, trainLabels, testData, 0)
 	#testLabels = featureSelectionMI(trainData, trainLabels, testData)
-	testLabels = logisticRegression(trainData, trainLabels, testData)
+	#testLabels = logisticRegression(trainData, trainLabels, testData)
+	testLabels = svmClassifier(trainData, trainLabels, testData)
 
 	print('Predicted number of 1 - ',format(sum(testLabels==1)))
 	print('Predicted number of 0 - ',format(sum(testLabels==0)))
@@ -162,7 +171,8 @@ def generateResult():
 		string = 'test_'+str(i)+','+str(int(testLabels[i]))+'\n'
 		file.write(string)
 			
-#classifier()
-generateResult()
+
+classifier()
+#generateResult()
 
 ## THRESH 1.0: true fraud: 434, false fraud: 21397, total: 284800
