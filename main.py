@@ -1,8 +1,3 @@
-'''
-AUTHOR: SOUMYADEEP THAKUR
-DATE: 6 OCT 2018
-'''
-
 import os
 import numpy as np
 import signal
@@ -25,6 +20,8 @@ from classifiers import svmClassifier
 from classifiers import adaBoostClassifier
 from classifiers import classifierCombination
 from classifiers import mlpClassifier
+from classifiers import lgbmclassifier
+from neuralNetworkAuc import neuralNetworkAuc
 
 '''
 TO DO: DROP TIME ATTRIBUTE AND TRY
@@ -100,6 +97,7 @@ def classifier():
 	choice = 4
 	#0- knn_classifier, 1 - autoencoder, 2 - neural network, 3 - bernoilli restricted boltzmann machine
 	fileName = 'test_log_mano_50'
+	results = [None] * fold
 	for train_index, test_index in split(data, labels, fold):
 		count += 1
 		trainData,testData = data[train_index], data[test_index]
@@ -116,8 +114,8 @@ def classifier():
 		elif (choice == 1):
 			autoencoder(trainData, trainLabels, testData, fileName, count)
 			maxAuc = maxThreshold = 0
-			for i in range(0,20):
-				thresh = i/10000
+			for i in range(10,80):
+				thresh = i/1000
 				autoencoderLabels = evaluate(('models/'+fileName+'_%i') %count, thresh)
 				print('Thresh - ', thresh),
 				temp = consfusion_eval(testLabels, autoencoderLabels)
@@ -127,6 +125,7 @@ def classifier():
 			print('Max auc - ',maxAuc,' threshold - ',maxThreshold)
 		elif (choice == 2):
 			nnLabels = neuralNetwork(trainData, trainLabels, testData, count)
+			#nnLabels = neuralNetworkAuc(trainData, trainLabels, testData, count)
 			auc = consfusion_eval(testLabels, nnLabels)
 			print('for fold - ', count,' AUC - ',auc)
 		elif (choice == 3):
@@ -134,16 +133,19 @@ def classifier():
 			auc = consfusion_eval(testLabels, boltzLabels)
 			print('AUC - ',auc)
 		elif (choice == 4):
-			#labels = randomForest(trainData, trainLabels, testData)
-			#labels = logisticRegression(trainData, trainLabels, testData)
-			#labels = svmClassifier(trainData, trainLabels, testData)
-			#labels = adaBoostClassifier(trainData, trainLabels, testData)
-			#labels = classifierCombination(trainData, trainLabels, testData)
-			labels = mlpClassifier(trainData, trainLabels, testData)
-			auc = consfusion_eval(testLabels, labels)
+			#clabels = randomForest(trainData, trainLabels, testData)
+			#clabels = logisticRegression(trainData, trainLabels, testData)
+			#clabels = svmClassifier(trainData, trainLabels, testData)
+			#clabels = adaBoostClassifier(trainData, trainLabels, testData)
+			#clabels = classifierCombination(trainData, trainLabels, testData)
+			#clabels = mlpClassifier(trainData, trainLabels, testData)
+			clabels = lgbmclassifier(trainData, trainLabels, testData)
+			auc = consfusion_eval(testLabels, clabels)
 			print('AUC - ',auc)
+			results[count-1] = auc
 		elif (choice==5):
 			featureSelectionMI(trainData, trainLabels, testData, testLabels)
+	print('Mean auc - ', np.mean(results))
 				
 def generateResult():
 	if not os.path.exists('models'):
@@ -159,7 +161,9 @@ def generateResult():
 	#testLabels = neuralNetwork(trainData, trainLabels, testData, 0)
 	#testLabels = featureSelectionMI(trainData, trainLabels, testData)
 	#testLabels = logisticRegression(trainData, trainLabels, testData)
-	testLabels = svmClassifier(trainData, trainLabels, testData)
+	#testLabels = svmClassifier(trainData, trainLabels, testData)
+	#testLabels = classifierCombination(trainData, trainLabels, testData)
+	testLabels = lgbmclassifier(trainData, trainLabels, testData)
 
 	print('Predicted number of 1 - ',format(sum(testLabels==1)))
 	print('Predicted number of 0 - ',format(sum(testLabels==0)))
@@ -168,11 +172,11 @@ def generateResult():
  	
 	file.write('ID_code,target\n') 
 	for i in range(0,testLabels.shape[0]):
-		string = 'test_'+str(i)+','+str(int(testLabels[i]))+'\n'
+		string = 'test_'+str(i)+','+str(testLabels[i])+'\n'
 		file.write(string)
 			
 
-classifier()
-#generateResult()
+#classifier()
+generateResult()
 
 ## THRESH 1.0: true fraud: 434, false fraud: 21397, total: 284800

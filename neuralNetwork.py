@@ -28,31 +28,31 @@ def create_model(ip_shape, lrate = 1e-5):
 	#create model
 	with tf.name_scope('input'):
 		model['ip'] = tf.placeholder(tf.float32, [None, dim_input], name = 'input-vector')
-		model['labels'] = tf.placeholder(tf.float32, [None, 2], name='class-labels')
+		model['labels'] = tf.placeholder(tf.float32, [None, n_class], name='class-labels')
 
 	model['labels'] = tf.stop_gradient(model['labels'])
 
 	# FIRST ENCODING LAYER
 
 	with tf.name_scope('layer-1'):
-		model['We_1'] = tf.Variable(tf.random_normal([dim_input, layer_1], stddev=1.0/layer_1), name = 'We-1')
-		model['Be_1'] = tf.Variable(tf.random_normal([1, layer_1], stddev=1.0/layer_1), name = 'Be-1')
+		model['We_1'] = tf.Variable(tf.random_normal([dim_input, layer_1], stddev = 0.1), name = 'We-1')
+		model['Be_1'] = tf.Variable(tf.random_normal([1, layer_1], stddev = 0.1), name = 'Be-1')
 		model['ye_1'] = tf.nn.tanh(tf.add(tf.matmul(model['ip'], model['We_1']), model['Be_1']), name = 'ye-1')
 
-	'''
+	
 	# SECOND ENCODING LAYER
 
 	with tf.name_scope('layer-2'):
-		model['We_2'] = tf.Variable(tf.random_normal([layer_1, layer_2], stddev=1.0/layer_2), name = 'We-2')
-		model['Be_2'] = tf.Variable(tf.random_normal([1, layer_2], stddev=1.0/layer_2), name = 'Be-2')
+		model['We_2'] = tf.Variable(tf.random_normal([layer_1, layer_2], stddev = 0.1), name = 'We-2') #stddev=1.0/layer_2)
+		model['Be_2'] = tf.Variable(tf.random_normal([1, layer_2], stddev = 0.1), name = 'Be-2')
 		model['ye_2'] = tf.nn.tanh(tf.add(tf.matmul(model['ye_1'], model['We_2']), model['Be_2']), name = 'ye-2')
-	'''
+	
 	# OUPUT LAYER
 	#change ye_1 to ye_2 and layer_1 to layer_2, to get 2 hidden layers
 	with tf.name_scope('output'):
-		model['We_3'] = tf.Variable(tf.random_normal([layer_1, n_class], stddev=1.0/n_class), name = 'We-3')
-		model['Be_3'] = tf.Variable(tf.random_normal([1, n_class], stddev=1.0/n_class), name = 'Be-3')
-		model['op'] = tf.add(tf.matmul(model['ye_1'], model['We_3']), model['Be_3'])
+		model['We_3'] = tf.Variable(tf.random_normal([layer_2, n_class], stddev = 0.1), name = 'We-3')
+		model['Be_3'] = tf.Variable(tf.random_normal([1, n_class], stddev = 0.1), name = 'Be-3')
+		model['op'] = tf.nn.sigmoid(tf.add(tf.matmul(model['ye_2'], model['We_3']), model['Be_3']))
 	
 	# LOSS FUNCTION
 
@@ -60,15 +60,18 @@ def create_model(ip_shape, lrate = 1e-5):
 
 		#model['cost'] = tf.nn.softmax_cross_entropy_with_logits_v2(labels=model['labels'], logits=model['op'],name = 'cost')
 		# (0.1,0.9) - 0.77; (0.2,0.8) - 0.75; (0.15,0.85) - 0.76
-		model['class_weight'] = tf.constant([[0.1, 0.9]])
+		model['class_weight'] = tf.constant([[0.66, 0.33]])
+		model['class_weight'] = tf.stop_gradient(model['class_weight'])
 		
 		model['weight_per_label'] = tf.transpose( tf.matmul(model['labels'], tf.transpose(model['class_weight'])) ) #shape [1, batch_size]
 		# this is the weight for each datapoint, depending on its label
 
 		model['cross-entropy'] = tf.multiply(model['weight_per_label'], tf.nn.softmax_cross_entropy_with_logits_v2(labels=model['labels'], logits=model['op']), name='cross-entropy') #shape [1, batch_size]
-		
 		model['cost'] = tf.reduce_mean(model['cross-entropy'],name = 'cost')
-
+		
+		#model['cost'] = tf.metrics.auc(labels=model['labels'], prediction = model['op'], name='cost') #shape [1, batch_size]
+		
+		
 		model['cost-2'] = tf.nn.softmax(model['op'])
 		
 		model['optimizer'] = tf.train.AdamOptimizer(lrate).minimize(model['cost'], name = 'optimizer')
@@ -142,7 +145,7 @@ def neuralNetwork(trainData, trainLabels, testData, fold):
 		print("Before OverSampling, counts of label '1': {}".format(sum(trainLabels==1)))
 		print("Before OverSampling, counts of label '0': {} \n".format(sum(trainLabels==0)))
 
-		sm = SMOTE(random_state = 2, k_neighbors = 3, n_jobs = 4)
+		sm = SMOTE(random_state = 2, k_neighbors = 3, n_jobs = -1)
 		trainData, trainLabels = sm.fit_sample(trainData, trainLabels.ravel())
 
 		print('train data size - ',trainData.shape, ' label size - ',trainLabels.shape)
@@ -156,7 +159,7 @@ def neuralNetwork(trainData, trainLabels, testData, fold):
 	trainLabelsOneHot[np.arange(trainLabels.shape[0]), trainLabels] = 1
 	
 	model = create_model(trainData.shape[1], lrate)
-	train_model(model, trainData, trainLabelsOneHot, batchSize, path_model='./models_nn/model_kfold_mano_400_%i' %fold, path_logdir='models_nn/logs_kfold_mano_400_%i' %fold, epoch=400)
+	train_model(model, trainData, trainLabelsOneHot, batchSize, path_model='./models_nn/model_kfold_mano_400_%i' %fold, path_logdir='models_nn/logs_kfold_mano_400_%i' %fold, epoch=50)
 	labels = test_model(model, testData, batchSize, path_model='./models_nn/model_kfold_mano_400_%i' %fold)
 	
 	return labels
@@ -213,6 +216,7 @@ epoch = 600
 auc =  64.31
 
 3 fold, no smote, class bias [0.1,0.9]
+all activaion function was tanh and last one sigmoid, with stddev
 batch size = 4000
 lrate = 1e-4
 hidden layers = [100, 30]
@@ -232,4 +236,7 @@ lrate = 1e-4
 hidden layers = [100]
 epoch = 300
 auc =  68.79 #lot of class 1 missed
+
+relu gives bad results
+stddev lower gives good results
 '''

@@ -77,6 +77,8 @@ def create_model(ip_shape, lrate = 1e-5):
 
 	return model;
 
+
+
 def train_model(model, trainData, trainLabels, batchSize, path_model, path_logdir, epoch = 100):
 
 	with tf.Session() as session:
@@ -141,7 +143,7 @@ def autoencoder(trainData, trainLabels, testData, str, fold):
 	print('after - ',trainData.shape)
 
 	#'''
-	lrate = 1e-5
+	lrate = 1e-3
 	model = create_model(trainData.shape[1], lrate)
 	train_model(model, trainData, trainLabels, batchSize, path_model='./models/model_kfold_mano_400_%i' %fold, path_logdir='models/logs_kfold_mano_400_%i' %fold, epoch=100)
 	test_model(model, testData, batchSize, path_model='./models/model_kfold_mano_400_%i' %fold, outfile=('models/'+str+'_%i') %fold)
@@ -149,3 +151,4 @@ def autoencoder(trainData, trainLabels, testData, str, fold):
 
 ## THRESH 1.0: true fraud: 434, false fraud: 21397, total: 284800
 ## Max auc -  0.5448489244014718  threshold -  0.0013
+# without using stddev, auc = 53.71

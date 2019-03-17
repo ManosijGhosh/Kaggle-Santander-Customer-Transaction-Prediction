@@ -122,7 +122,7 @@ def test_model(model, X_test, batchSize, path_model, outfile):
 				outfp.write(str(list(ans)))
 				outfp.write('\n')
 		
-def autoencoder(X_train, X_test, Y_train, str, fold):
+def autoencoder_unsupervised(X_train, X_test, Y_train, str, fold):
 	
 	#X_test, X_train, Y_test = make_data()
 	batchSize = 100
