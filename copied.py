@@ -61,7 +61,7 @@ classifier.add(Dense(units = 1, kernel_initializer = 'uniform', activation = 'si
 classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
 
 # Fitting the ANN to the Training set
-classifier.fit(X_train, y_train, batch_size = 4000, epochs = 50)
+classifier.fit(X_train, y_train, batch_size = 4000, epochs = 100)
 
 # Part 3 - Making predictions and evaluating the model
 
@@ -93,9 +93,8 @@ X_t = obj_standart_test.fit_transform(X_t)
 
 # Predicting the Test set results
 y_pred_t = classifier.predict(X_t)
-y_pred_t = (y_pred_t > 0.5)
 
 target['target'] = y_pred_t
-target.drop(['target'],axis=1, inplace = True)
+#target.drop(['target'],axis=1, inplace = True)
 
 target.to_csv('sample_submission_n.csv', index=False)

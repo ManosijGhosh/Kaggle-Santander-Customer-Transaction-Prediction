@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 from sklearn import preprocessing
+from sklearn import metrics 
 
 from confusion import evaluate
 from autoencoder import autoencoder
@@ -22,6 +23,7 @@ from classifiers import classifierCombination
 from classifiers import mlpClassifier
 from classifiers import lgbmclassifier
 from neuralNetworkAuc import neuralNetworkAuc
+
 
 '''
 TO DO: DROP TIME ATTRIBUTE AND TRY
@@ -58,7 +60,7 @@ def split(X_val, Y_val,fold):
 	for train_index, test_index in skf.split(X_val, Y_val):
 		yield (train_index, test_index)
 
-def consfusion_eval(actualLabels,predictedLabels):
+def consfusion_eval_accuracy(actualLabels,predictedLabels):
 
 	#sprint(labels)
 	#TPX, TNX, FPX, FNX = list(), list(), list(), list()
@@ -85,6 +87,10 @@ def consfusion_eval(actualLabels,predictedLabels):
 	auc = (tp/(2*(tp+fn))) + (tn/(2*(fp+tn)))
 	print(' AUC - ', auc)
 	return auc
+
+def area_under_curve(actual, predicted):
+	val = metrics.roc_auc_score(actual, predicted, average='macro', max_fpr = 1)
+	return val
 		
 def classifier():
 	
@@ -94,7 +100,7 @@ def classifier():
 	data, labels = preprocess()
 	fold = 3
 	count=0
-	choice = 4
+	choice = 6
 	#0- knn_classifier, 1 - autoencoder, 2 - neural network, 3 - bernoilli restricted boltzmann machine
 	fileName = 'test_log_mano_50'
 	results = [None] * fold
@@ -110,7 +116,7 @@ def classifier():
 			knnLabels = createKnnModel(trainData, trainLabels, testData)
 			print('knn trained')
 			auc = consfusion_eval(testLabels, knnLabels)
-			print('AUC - ',auc)
+			
 		elif (choice == 1):
 			autoencoder(trainData, trainLabels, testData, fileName, count)
 			maxAuc = maxThreshold = 0
@@ -123,15 +129,17 @@ def classifier():
 					maxAuc = temp
 					maxThreshold = thresh
 			print('Max auc - ',maxAuc,' threshold - ',maxThreshold)
+			auc = maxAuc
+
 		elif (choice == 2):
 			nnLabels = neuralNetwork(trainData, trainLabels, testData, count)
 			#nnLabels = neuralNetworkAuc(trainData, trainLabels, testData, count)
 			auc = consfusion_eval(testLabels, nnLabels)
-			print('for fold - ', count,' AUC - ',auc)
+
 		elif (choice == 3):
 			boltzLabels = restrictedBoltzmannMachine(trainData, trainLabels, testData)
 			auc = consfusion_eval(testLabels, boltzLabels)
-			print('AUC - ',auc)
+
 		elif (choice == 4):
 			#clabels = randomForest(trainData, trainLabels, testData)
 			#clabels = logisticRegression(trainData, trainLabels, testData)
@@ -141,10 +149,15 @@ def classifier():
 			#clabels = mlpClassifier(trainData, trainLabels, testData)
 			clabels = lgbmclassifier(trainData, trainLabels, testData)
 			auc = consfusion_eval(testLabels, clabels)
-			print('AUC - ',auc)
-			results[count-1] = auc
+
 		elif (choice==5):
 			featureSelectionMI(trainData, trainLabels, testData, testLabels)
+		elif (choice==6):
+			nlabels = neuralNetworkAuc(trainData, trainLabels, testData, count)
+			auc = area_under_curve(testLabels, nlabels)
+
+		results[count-1] = auc
+		print('fold ', count, ' AUC - ',auc)
 	print('Mean auc - ', np.mean(results))
 				
 def generateResult():
@@ -163,7 +176,8 @@ def generateResult():
 	#testLabels = logisticRegression(trainData, trainLabels, testData)
 	#testLabels = svmClassifier(trainData, trainLabels, testData)
 	#testLabels = classifierCombination(trainData, trainLabels, testData)
-	testLabels = lgbmclassifier(trainData, trainLabels, testData)
+	#testLabels = lgbmclassifier(trainData, trainLabels, testData)
+	testLabels = neuralNetworkAuc(trainData, trainLabels, testData, 0)
 
 	print('Predicted number of 1 - ',format(sum(testLabels==1)))
 	print('Predicted number of 0 - ',format(sum(testLabels==0)))
@@ -176,7 +190,7 @@ def generateResult():
 		file.write(string)
 			
 
-#classifier()
-generateResult()
+classifier()
+#generateResult()
 
 ## THRESH 1.0: true fraud: 434, false fraud: 21397, total: 284800
